@@ -1,0 +1,138 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import sys
+import csv
+import time
+import datetime
+import httplib2
+from selenium import webdriver
+from optparse import OptionParser
+
+
+ARGS = [
+    {
+        'val': '--start-date',
+        'dest': 'start_date',
+        'action': 'store',
+        'help': 'beginning of date range, as YYYY-mm-dd'
+    }, {
+        'val': '--end-date',
+        'dest': 'end_date',
+        'action': 'store',
+        'help': 'end of date range, as YYYY-mm-dd'
+    }, {
+        'val': '--user-agent',
+        'dest': 'user_agent',
+        'action': 'store',
+        'help': 'User agent used by webdriver'
+    }, {
+        'val': '--user',
+        'dest': 'user',
+        'action': 'store',
+        'help': 'Google user email address'
+    }, {
+        'val': '--password',
+        'dest': 'password',
+        'action': 'store',
+        'help': 'Google user password'
+    }, {
+        'val': '--account',
+        'dest': 'gb_account',
+        'action': 'store',
+        'help': 'Google Books account number'
+    }
+]
+
+
+def print_results(report_buffer):
+    w = csv.writer(sys.stdout)
+    header = None
+    for i, row in enumerate(report_buffer):
+        # if the report has no data (only headers) we want an empty report
+        if i == 0:
+            header = row
+            continue
+        elif i == 1:
+            w.writerow(header)
+        w.writerow(row)
+
+
+def initialize_service(user, password, user_agent):
+    login_url = "https://accounts.google.com/ServiceLogin"
+    args = {'phantomjs.page.settings.userAgent': user_agent}
+    driver = webdriver.PhantomJS(desired_capabilities=args)
+    driver.get(login_url)
+    driver.find_element_by_id("Email").send_keys(user)
+    driver.find_element_by_id("next").click()
+    time.sleep(3)
+    driver.find_element_by_name("Passwd").send_keys(password)
+    driver.find_element_by_id("signIn").click()
+    time.sleep(4)
+    return driver
+
+
+def build_cookie_str(session_cookies):
+    cookies = {}
+    cookie_str = ("1P_JAR=%s; NID=%s; CONSENT=%s; SID=%s; HSID=%s; SSID=%s;" +
+                  " APISID=%s; SAPISID=%s; SIDCC=%s;")
+    for c in session_cookies:
+        cookies[c['name']] = c['value']
+
+    return cookie_str % (cookies['1P_JAR'], cookies['NID'], cookies['CONSENT'],
+                         cookies['SID'], cookies['HSID'], cookies['SSID'],
+                         cookies['APISID'], cookies['SAPISID'],
+                         cookies['SIDCC'])
+
+
+def build_report_url(gb_account, start_date, end_date):
+    fmt = '%Y,%-m,%-d'
+    start = datetime.datetime.strptime(start_date, '%Y-%m-%d').strftime(fmt)
+    end = datetime.datetime.strptime(end_date, '%Y-%m-%d').strftime(fmt)
+    url = ("https://play.google.com/books/publish/a/%s/downloadTrafficReport" +
+           "?f.req=[[null,%s],[null,%s],2]&hl=en-US&token=")
+    return url % (gb_account, start, end)
+
+
+def get_report(report_url, cookie_str):
+    h = httplib2.Http()
+    res, content = h.request(report_url, 'GET', headers={'Cookie': cookie_str})
+    try:
+        assert res.status == 200
+    except AssertionError:
+        raise ValueError(content)
+    return content
+
+
+def print_gb_csv(gb_account, user, password, user_agent, start_date, end_date):
+    service = initialize_service(user, password, user_agent)
+    cookie_str = build_cookie_str(service.get_cookies())
+    report_url = build_report_url(gb_account, start_date, end_date)
+
+    results = get_report(report_url, cookie_str)
+    service.close()
+    report_buffer = csv.reader(results.decode('utf-16'))
+    print_results(report_buffer)
+
+
+def get_options(args):
+    parser = OptionParser()
+    for arg in args:
+        parser.add_option(arg['val'], dest=arg['dest'],
+                          action=arg['action'], help=arg['help'])
+    options, rest = parser.parse_args()
+
+    assert rest == []
+    assert options.user and options.password and options.user_agent \
+        and options.gb_account and options.start_date and options.end_date
+    return options
+
+
+def run():
+    options = get_options(ARGS)
+    print_gb_csv(options.gb_account, options.user, options.password,
+                 options.user_agent, options.start_date, options.end_date)
+
+
+if __name__ == '__main__':
+    run()
