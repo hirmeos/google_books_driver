@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import sys
-import csv
 import time
 import datetime
 import httplib2
@@ -43,19 +41,9 @@ ARGS = [
         'help': 'Google Books account number'
     }
 ]
-
-
-def print_results(report_buffer):
-    w = csv.writer(sys.stdout)
-    header = None
-    for i, row in enumerate(report_buffer):
-        # if the report has no data (only headers) we want an empty report
-        if i == 0:
-            header = row
-            continue
-        elif i == 1:
-            w.writerow(header)
-        w.writerow(row)
+REPORT_HEADERS = ('"Primary ISBN"\t"Title"\t"Book Visits (BV)"\t"BV with ' +
+                  'Pages Viewed"\t"Non-Unique Buy Clicks"\t"BV with Buy ' +
+                  'Clicks"\t"Buy Link CTR"\t"Pages Viewed"')
 
 
 def initialize_service(user, password, user_agent):
@@ -105,8 +93,12 @@ def print_gb_csv(gb_account, user, password, user_agent, start_date, end_date):
 
     results = get_report(report_url, cookie_str)
     service.close()
-    report_buffer = csv.reader(results.decode('utf-16'))
-    print_results(report_buffer)
+    report = results.decode('utf-16')
+    try:
+        assert report.strip() != REPORT_HEADERS and report.strip()
+        print(report)
+    except AssertionError:
+        pass
 
 
 def get_options(args):
