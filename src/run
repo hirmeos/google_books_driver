@@ -111,11 +111,13 @@ def run():
     for m in MODES:
         config = compile_config(m['config'])
         for day in generate_dates(m['startDate'], cutoff_date):
-            date = day.strftime('%Y-%m-%d')
-            cache_file = get_cache_filename(CACHEDIR, m['name'], date)
+            next_day = day + timedelta(1, 0, 0)
+            start_date = day.strftime('%Y-%m-%d')
+            end_date = next_day.strftime('%Y-%m-%d')
+            cache_file = get_cache_filename(CACHEDIR, m['name'], start_date)
             if not exists_and_not_empty(cache_file):
-                cache_gb_stats(outstream(cache_file), date, date, USER_AGENT,
-                               GOOGLE_USER, GOOGLE_PASS, config)
+                cache_gb_stats(outstream(cache_file), start_date, end_date,
+                               USER_AGENT, GOOGLE_USER, GOOGLE_PASS, config)
 
     # now we standarise GB reports and store them in each output CSV
     earliest_date = get_earliest([m['startDate'] for m in MODES])
