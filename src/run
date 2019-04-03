@@ -95,12 +95,10 @@ def cache_gb_stats(outputstream, start_date, end_date, user_agent, user,
     subprocess.call(cmd, stdout=outputstream)
 
 
-def resolve_cache(output_stream, input_stream, measure,
-                  prefix, date, regex, headers):
+def resolve_cache(output_stream, input_stream, measure, date, headers):
     add_headers = ['--add-headers'] if headers else []
     cmd = ['./resolve_reports',
            '--measure', measure,
-           '--prefix', prefix,
            '--date', date] + add_headers
     subprocess.call(cmd, stdout=output_stream, stdin=input_stream)
 
@@ -137,11 +135,9 @@ def run():
             if not exists_and_not_empty(cache_file):
                 continue
             inputs = instream(cache_file)
-            regex = m['regex'] if 'regex' in m else []
             headers = i == 0  # only include headers in first iteration
             i += 1
-            resolve_cache(output, inputs, m['measure'],
-                          m['prefix'], date, regex, headers)
+            resolve_cache(output, inputs, m['measure'], date, headers)
 
 
 if __name__ == '__main__':
