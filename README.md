@@ -1,12 +1,14 @@
 # Google Books Driver
 [![Build Status](https://travis-ci.org/hirmeos/google_books_driver.svg?branch=master)](https://travis-ci.org/hirmeos/google_books_driver) [![Release](https://img.shields.io/github/release/hirmeos/google_books_driver.svg?colorB=58839b)](https://github.com/hirmeos/google_books_driver/releases) [![License](https://img.shields.io/github/license/hirmeos/google_books_driver.svg?colorB=ff0000)](https://github.com/hirmeos/google_books_driver/blob/master/LICENSE)
 
+- Documentation: https://metrics.operas-eu.org/docs/google-books
+
 This driver allows programmatic retrieval and normalisation of Goole Books usage reports.
 
 The driver is made of two modules: the first one scrapes usage reports from Google Books and stores them in a directory (`CACHEDIR`); the second reads from cache, normalises the reports, and outputs to a different directory (`OUTDIR`). We recommend running this driver in a docker container and mapping both `CACHEDIR` and `OUTDIR` to persistent volumes.
 
 ## Setup
-### Requirments
+### Requirements
 Identifier normalisation is performed using an instance of [hirmeos/identifier_translation_service][1] - you must first setup this API.
 
 ### Credentials
@@ -52,10 +54,12 @@ Example:
 MODES=[{"measure":"https://metrics.operas-eu.org/google-books/views/v1","name":"google-books","startDate":"2010-01-01","config":[{"name":"account","value":"0123456789012345678"}]}]
 ```
 
-### Run via crontab
+## Run via crontab
 ```
-0 0 * * 0 docker run --rm --name "google_books_driver" --env-file /path/to/config.env -v /somewhere/to/store/analysis:/usr/src/app/cache -v /somewhere/to/store/output:/usr/src/app/output openbookpublishers/google_books_driver
+0 0 * * 0 docker run --rm --name "google_books_driver" --env-file /path/to/config.env -v google_books_cache:/usr/src/app/cache -v metrics:/usr/src/app/output openbookpublishers/google_books_driver
 ```
 
 ## Troubleshooting
 It is very important to check the output the first time the driver is run as it is very likely that Google will block the 'suspicious' login attempt. If it does, you will need to login with the same credentials you have provided the driver with and review the security settings, Google will ask if you were prevented from logging in and you must confirm so. Afterwards re-run the driver and it should work just fine.
+
+[1]: https://github.com/hirmeos/identifier_translation_service "Identifier Translation Service"
