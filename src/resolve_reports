@@ -94,14 +94,16 @@ def standarise_uri(uri):
 
 def resolve(date):
     timestamp = date + " 00:00:00"
-    r = csv.reader(sys.stdin)
+    r = csv.reader(sys.stdin, delimiter='\t')
     next(r, None)  # skip the headers
 
     for row in r:
+        if not row:
+            continue  # last line of report is empty
         isbn, title, views, bv_pages, buy_clicks, bv_bc, ctr, pageviews = row
 
         uri = standarise_uri(isbn)
-        for identifier in isbn_to_id(uri):
+        for identifier in isbn_to_id(uri, timestamp):
             uri = identifier['URI']
             yield (timestamp, uri, views)
 
