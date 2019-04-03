@@ -15,8 +15,6 @@ AUTH_API_ENDP = os.environ['AUTH_API_ENDP']
 URI_SCHEME = os.environ['URI_SCHEME']
 URI_STRICT = os.environ['URI_STRICT']
 WORK_TYPES = json.loads(os.getenv('WORK_TYPES'))
-CACHE = {}
-COUNTRY_CACHE = {}
 ARGS = [
     {
         'val': '--measure',
@@ -75,8 +73,6 @@ def get_token(url, email, passwd):
 
 
 def isbn_to_id(uri, timestamp):
-    if uri in CACHE:
-        return CACHE[uri]
     req = "%s?uri=%s&filter=uri_scheme:%s,%s&strict=%s" \
           % (URI_API_ENDP, uri, URI_SCHEME, TYPES, URI_STRICT)
     h = httplib2.Http()
@@ -89,7 +85,6 @@ def isbn_to_id(uri, timestamp):
         print(m, file=sys.stderr)
         return []
     entry = json.loads(content.decode('utf-8'))['data']
-    CACHE[uri] = entry
     return entry
 
 
@@ -113,11 +108,11 @@ def resolve(date):
 
 def run(measure, date, add_headers):
     hits = {}
-    for timestamp, uri, value in resolve(date):
+    for timestamp, uri, views in resolve(date):
         key = (timestamp, uri)
         if key not in hits:
             hits[key] = 0
-        hits[key] += int(value)
+        hits[key] += int(views)
 
     w = csv.writer(sys.stdout)
     if add_headers:
