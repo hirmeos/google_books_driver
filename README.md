@@ -12,3 +12,6 @@ We recommend creating a Google account specifically for this purpose, instead of
 ```
 0 0 * * 0 docker run --rm --name "google_books_driver" --env-file /path/to/config.env -v /somewhere/to/store/analysis:/usr/src/app/cache -v /somewhere/to/store/output:/usr/src/app/output openbookpublishers/google_books_driver
 ```
+
+## Troubleshooting
+It is very important to check the output the first time the driver is run as it is very likely that Google will block the 'suspicious' login attempt. If it does, you will need to login with the same credentials you have provided the driver with and review the security settings, Google will ask if you were prevented from logging in and you must confirm so. Afterwards re-run the driver and it should work just fine.
