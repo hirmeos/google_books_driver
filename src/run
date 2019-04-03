@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import os
+import json
+import subprocess
+from datetime import datetime, timedelta
+
+MODES = json.loads(os.getenv('MODES'))
+USER_AGENT = os.environ['USER_AGENT']
+GOOGLE_USER = os.environ['GOOGLE_USER']
+GOOGLE_PASS = os.environ['GOOGLE_PASS']
+OUTDIR = os.environ['OUTDIR']
+CACHEDIR = os.environ['CACHEDIR']
+CUTOFF_DAYS = int(os.environ['CUTOFF_DAYS'])
+
+
+def outstream(filename):
+    return open(filename, "w")
+
+
+def instream(filename):
+    return open(filename, "r")
+
+
+def get_cache_filename(odir, name, d):
+    return "%s/google-books_%s_%s.csv" % (odir, d, name)
+
+
+def get_output_filename(odir, date):
+    return "%s/GoogleBooks_%s.csv" % (odir, date)
+
+
+def generate_dates(date, cutoff_date):
+    epoch = datetime.strptime(date, '%Y-%m-%d')
+    cutoff = datetime.strptime(cutoff_date, '%Y-%m-%d')
+
+    i = epoch
+    while i < cutoff:
+        yield i
+        i += timedelta(1, 0, 0)
+
+
+def get_cutoff_date(cutoff_days):
+    cutoff = datetime.now() - timedelta(cutoff_days, 0, 0)
+    return cutoff.strftime('%Y-%m-%d')
+
+
+def get_earliest(dates):
+    earliest = dates[0]
+    for date in dates:
+        date_time = datetime.strptime(date, '%Y-%m-%d')
+        earliest_time = datetime.strptime(earliest, '%Y-%m-%d')
+        try:
+            assert date_time > earliest_time
+        except AssertionError:
+            earliest = date
+    return earliest
+
+
+def exists_and_not_empty(filename):
+    try:
+        return os.path.getsize(filename) > 0
+    except (AssertionError, OSError):
+        return False
+
+
+def old_or_empty(filename, cutoff):
+    cutoff = datetime.now() - timedelta(days=cutoff)
+    try:
+        size = os.path.getsize(filename)
+        time = datetime.fromtimestamp(os.path.getctime(filename))
+        assert size > 0 and time > cutoff
+    except (AssertionError, OSError):
+        return True
+    return False
+
+
+def compile_config(config_list):
+    vals = []
+    for c in config_list:
+        vals.append('--' + c['name'])
+        vals.append(c['value'])
+    return vals
+
+
+def cache_gb_stats(outputstream, start_date, end_date, user_agent, user,
+                   password, config):
+    cmd = ['./retrieve_gb_stats',
+           '--start-date', start_date,
+           '--end-date', end_date,
+           '--user-agent', user_agent,
+           '--user', user,
+           '--password', password] + config
+    subprocess.call(cmd, stdout=outputstream)
+
+
+def resolve_cache(output_stream, input_stream, measure, date, headers):
+    add_headers = ['--add-headers'] if headers else []
+    cmd = ['./resolve_reports',
+           '--measure', measure,
+           '--date', date] + add_headers
+    subprocess.call(cmd, stdout=output_stream, stdin=input_stream)
+
+
+def run():
+    cutoff_date = get_cutoff_date(CUTOFF_DAYS)
+    # cache Google Books reports for all MODES
+    for m in MODES:
+        config = compile_config(m['config'])
+        for day in generate_dates(m['startDate'], cutoff_date):
+            next_day = day + timedelta(1, 0, 0)
+            start_date = day.strftime('%Y-%m-%d')
+            end_date = next_day.strftime('%Y-%m-%d')
+            cache_file = get_cache_filename(CACHEDIR, m['name'], start_date)
+            if not exists_and_not_empty(cache_file):
+                cache_gb_stats(outstream(cache_file), start_date, end_date,
+                               USER_AGENT, GOOGLE_USER, GOOGLE_PASS, config)
+
+    # now we standarise GB reports and store them in each output CSV
+    earliest_date = get_earliest([m['startDate'] for m in MODES])
+    for day in generate_dates(earliest_date, cutoff_date):
+        date = day.strftime('%Y-%m-%d')
+        out_file = get_output_filename(OUTDIR, date)
+
+        # continue if output file already exists
+        if exists_and_not_empty(out_file):
+            continue
+
+        i = 0
+        output = outstream(out_file)
+        for m in MODES:
+            cache_file = get_cache_filename(CACHEDIR, m['name'], date)
+            # at this point all *relevant* cache files must exists
+            if not exists_and_not_empty(cache_file):
+                continue
+            inputs = instream(cache_file)
+            headers = i == 0  # only include headers in first iteration
+            i += 1
+            resolve_cache(output, inputs, m['measure'], date, headers)
+
+
+if __name__ == '__main__':
+    run()

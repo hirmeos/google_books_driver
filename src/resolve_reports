@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+import os
+import sys
+import json
+import httplib2
+import csv
+from optparse import OptionParser
+
+
+URI_API_ENDP = os.environ['URI_API_ENDP']
+URI_API_USER = os.environ['URI_API_USER']
+URI_API_PASS = os.environ['URI_API_PASS']
+AUTH_API_ENDP = os.environ['AUTH_API_ENDP']
+URI_SCHEME = os.environ['URI_SCHEME']
+URI_STRICT = os.environ['URI_STRICT']
+WORK_TYPES = json.loads(os.getenv('WORK_TYPES'))
+ARGS = [
+    {
+        'val': '--measure',
+        'dest': 'measure',
+        'action': 'store',
+        'default': None,
+        'help': 'URI eg. http://metrics.operas-eu.org/world-reader/users/v1'
+    }, {
+        'val': '--date',
+        'dest': 'date',
+        'action': 'store',
+        'default': None,
+        'help': 'Date that input refers to'
+    }, {
+        'val': '--add-headers',
+        'dest': 'add_headers',
+        'action': 'store_true',
+        'default': [],
+        'help': 'Whether to print report headers'
+    }
+]
+
+
+def get_options(args):
+    parser = OptionParser()
+    for arg in args:
+        parser.add_option(arg['val'], dest=arg['dest'],
+                          action=arg['action'], help=arg['help'])
+    options, rest = parser.parse_args()
+
+    assert rest == []
+    assert options.measure and options.date
+    return options
+
+
+def compile_work_types(types):
+    val = ''
+    i = 1
+    for t in types:
+        val += 'work_type:' + t
+        val += ',' if i < len(types) else ''
+        i += 1
+    return val
+
+
+def get_token(url, email, passwd):
+    h = httplib2.Http()
+    credentials = {'email': email, 'password': passwd}
+    headers = {'content-type': 'application/json'}
+    res, content = h.request(url, 'POST', json.dumps(credentials), headers)
+    try:
+        assert res.status == 200
+    except AssertionError:
+        raise ValueError(content)
+    return json.loads(content.decode('utf-8'))['data'][0]['token']
+
+
+def isbn_to_id(uri, timestamp):
+    req = "%s?uri=%s&filter=uri_scheme:%s,%s&strict=%s" \
+          % (URI_API_ENDP, uri, URI_SCHEME, TYPES, URI_STRICT)
+    h = httplib2.Http()
+    res, content = h.request(req, 'GET', headers={'Authorization': AUTH})
+    try:
+        assert res.status == 200
+    except AssertionError:
+        r = json.loads(content.decode('utf-8'))
+        m = "%s: %s (%s)" % (r['message'], r['parameters']['uri'], timestamp)
+        print(m, file=sys.stderr)
+        return []
+    entry = json.loads(content.decode('utf-8'))['data']
+    return entry
+
+
+def standarise_uri(uri):
+    return 'urn:isbn:%s' % (uri)
+
+
+def resolve(date):
+    timestamp = date + " 00:00:00"
+    r = csv.reader(sys.stdin, delimiter='\t')
+    next(r, None)  # skip the headers
+
+    for row in r:
+        if not row:
+            continue  # last line of report is empty
+        isbn, title, views, bv_pages, buy_clicks, bv_bc, ctr, pageviews = row
+
+        uri = standarise_uri(isbn)
+        for identifier in isbn_to_id(uri, timestamp):
+            uri = identifier['URI']
+            yield (timestamp, uri, views)
+
+
+def run(measure, date, add_headers):
+    hits = {}
+    for timestamp, uri, views in resolve(date):
+        key = (timestamp, uri)
+        if key not in hits:
+            hits[key] = 0
+        hits[key] += int(views)
+
+    w = csv.writer(sys.stdout)
+    if add_headers:
+        w.writerow(('measure_id', 'timestamp', 'work_uri',
+                    'country_uri', 'event_uri', 'value'))
+    for key, value in hits.items():
+        row = tuple([measure] + list(key) + ['', ''] + [value])
+        w.writerow(row)
+
+
+API_JWTOKEN = get_token(AUTH_API_ENDP, URI_API_USER, URI_API_PASS)
+AUTH = 'Bearer ' + API_JWTOKEN
+TYPES = compile_work_types(WORK_TYPES)
+
+if __name__ == '__main__':
+    options = get_options(ARGS)
+    run(options.measure, options.date, options.add_headers)
