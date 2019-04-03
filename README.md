@@ -1,14 +1,58 @@
 # Google Books Driver
 [![Build Status](https://travis-ci.org/hirmeos/google_books_driver.svg?branch=master)](https://travis-ci.org/hirmeos/google_books_driver) [![Release](https://img.shields.io/github/release/hirmeos/google_books_driver.svg?colorB=58839b)](https://github.com/hirmeos/google_books_driver/releases) [![License](https://img.shields.io/github/license/hirmeos/google_books_driver.svg?colorB=ff0000)](https://github.com/hirmeos/google_books_driver/blob/master/LICENSE)
 
+This driver allows programmatic retrieval and normalisation of Goole Books usage reports.
 
-## Credentials
+The driver is made of two modules: the first one scrapes usage reports from Google Books and stores them in a directory (`CACHEDIR`); the second reads from cache, normalises the reports, and outputs to a different directory (`OUTDIR`). We recommend running this driver in a docker container and mapping both `CACHEDIR` and `OUTDIR` to persistent volumes.
+
+## Setup
+### Requirments
+Identifier normalisation is performed using an instance of [hirmeos/identifier_translation_service][1] - you must first setup this API.
+
+### Credentials
 Google does not provide an API to retrieve Google Books traffic reports, therefore we cannot use OAuth tokens for authentication. This driver runs selenium to login to Google using plain credentials (i.e. a Google account email and password) and obtain the traffic report.
 
 We recommend creating a Google account specifically for this purpose, instead of using existing personal credentials. Needless to say that this account must be granted access to the publisher's Google Play Books page.
 
+### Environment variables
+The following environment variables must be set. You can find a template in `./config/config.env.example`.
 
-## Run via crontab
+| Variable        | Description                                                                      |
+| --------------- | -------------------------------------------------------------------------------- |
+| `MODES`         | A JSON array containing further configuration (see below).                       |
+| `WORK_TYPES`    | All the pertinent work types to query in the translation service.                |
+| `USER_AGENT`    | The user agent to use with phantomjs.                                            |
+| `GOOGLE_USER`   | The email address of a google account with access to the reports.                |
+| `GOOGLE_PASS`   | The password for the above google account.                                       |
+| `OUTDIR`        | The path to the directory where the driver will store its output.                |
+| `CACHEDIR`      | The path to the directory where the driver will store the raw reports.           |
+| `URI_API_ENDP`  | The URL to the translation service.                                              |
+| `AUTH_API_ENDP` | The URL to the tokens API.                                                       |
+| `URI_API_USER`  | The email address of the user with access to the translation service.            |
+| `URI_API_PASS`  | The password of the above user.                                                  |
+| `URI_SCHEME`    | The desired URI scheme to normalise identifiers to (we recommend DOI, info:doi). |
+| `URI_STRICT`    | Whether to output errors with ambiguous translation queries.                     |
+| `CUTOFF_DAYS`   | The driver will get reports until today minus `CUTOFF_DAYS`.                     |
+
+
+### The `MODES` env variable
+You must define a JSON array in`MODES`, with at least one record. The driver will iterate through the array, performing its task once per mode; in a typical case there will only be one entry in the array, however this configuration allows one single driver to query reports from multiple google books accounts.
+
+Each entry of the `MODES` array must contain values for `measure`, `name`, `startDate`, and `config`.
+
+| Attribute   | Description                                                                                                     |
+| ----------- | --------------------------------------------------------------------------------------------------------------- |
+| `measure`   | A URI identifying the type of measure. You may use https://metrics.operas-eu.org/google-books/views/v1          |
+| `name`      | The name of this mode. This is not too important, though it is used as the prefix of cache and output files.    |
+| `startDate` | The first date in which your account has usage data available in Google Books (YYYY-MM-DD format)               |
+| `config`    | An array containing one single object containing the unique ID of your Google Books account (see example below) |
+
+Example:
+```
+MODES=[{"measure":"https://metrics.operas-eu.org/google-books/views/v1","name":"google-books","startDate":"2010-01-01","config":[{"name":"account","value":"0123456789012345678"}]}]
+```
+
+### Run via crontab
 ```
 0 0 * * 0 docker run --rm --name "google_books_driver" --env-file /path/to/config.env -v /somewhere/to/store/analysis:/usr/src/app/cache -v /somewhere/to/store/output:/usr/src/app/output openbookpublishers/google_books_driver
 ```
