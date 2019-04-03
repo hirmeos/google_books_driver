@@ -1,6 +1,8 @@
 # Google Books Driver
 [![Build Status](https://travis-ci.org/hirmeos/google_books_driver.svg?branch=master)](https://travis-ci.org/hirmeos/google_books_driver) [![Release](https://img.shields.io/github/release/hirmeos/google_books_driver.svg?colorB=58839b)](https://github.com/hirmeos/google_books_driver/releases) [![License](https://img.shields.io/github/license/hirmeos/google_books_driver.svg?colorB=ff0000)](https://github.com/hirmeos/google_books_driver/blob/master/LICENSE)
 
+- Documentation: https://metrics.operas-eu.org/docs/google-books
+
 This driver allows programmatic retrieval and normalisation of Goole Books usage reports.
 
 The driver is made of two modules: the first one scrapes usage reports from Google Books and stores them in a directory (`CACHEDIR`); the second reads from cache, normalises the reports, and outputs to a different directory (`OUTDIR`). We recommend running this driver in a docker container and mapping both `CACHEDIR` and `OUTDIR` to persistent volumes.
