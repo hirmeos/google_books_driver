@@ -42,6 +42,7 @@ ARGS = [
         'help': 'Google Books account number'
     }
 ]
+CONTENT_TYPE = 'text/csv; charset=utf-16le'
 REPORT_HEADERS = ('"Primary ISBN"\t"Title"\t"Book Visits (BV)"\t"BV with ' +
                   'Pages Viewed"\t"Non-Unique Buy Clicks"\t"BV with Buy ' +
                   'Clicks"\t"Buy Link CTR"\t"Pages Viewed"')
@@ -80,9 +81,8 @@ def build_report_url(gb_account, start_date, end_date):
 def get_report(report_url, cookie_str):
     h = httplib2.Http()
     res, content = h.request(report_url, 'GET', headers={'Cookie': cookie_str})
-    try:
-        assert res.status == 200
-    except AssertionError:
+    if not res.status == 200 or not res['content-type'] == CONTENT_TYPE:
+        # These are not the reports we're looking for
         raise ValueError(content)
     return content
 
@@ -92,13 +92,13 @@ def print_gb_csv(gb_account, user, password, user_agent, start_date, end_date):
     cookie_str = build_cookie_str(service.get_cookies())
     report_url = build_report_url(gb_account, start_date, end_date)
 
-    results = get_report(report_url, cookie_str)
-    service.close()
     try:
+        results = get_report(report_url, cookie_str)
+        service.close()
         report = results.decode('utf-16')
-    except UnicodeDecodeError:
+    except (UnicodeDecodeError, ValueError):
         msg = ('Failed to retrieve report %s-%s.' +
-               'This is likely to be caused by an authentication issue')
+               'This is likely to be caused by an authentication issue\n')
         sys.stderr.write(msg % (start_date, end_date))
         sys.exit(1)
     try:
