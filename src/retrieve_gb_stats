@@ -83,7 +83,7 @@ def get_report(report_url, cookie_str):
     if not res.status == 200:
         raise ValueError(content)
     if not res['content-type'] == 'text/csv; charset=utf-16le':
-        return ""  # These are not the reports we're looking for
+        return b""  # These are not the reports we're looking for
     return content
 
 
