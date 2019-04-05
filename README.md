@@ -62,4 +62,6 @@ MODES=[{"measure":"https://metrics.operas-eu.org/google-books/views/v1","name":"
 ## Troubleshooting
 It is very important to check the output the first time the driver is run as it is very likely that Google will block the 'suspicious' login attempt. If it does, you will need to login with the same credentials you have provided the driver with and review the security settings, Google will ask if you were prevented from logging in and you must confirm so. Afterwards re-run the driver and it should work just fine.
 
+The error "Failed to retrieve report x-y. This is likely to be caused by an authentication issue" will be printed to standard error whenever the driver is not able to fetch a report. In most cases this simply means that the scraper did not manage to singin properly for that particular report, and a second iteration of the driver will solve the issue. However, if the error persists for the whole date range it is worth checking that Google is not blocking the signin attempt; otherwise you may simply ignore the error as it will eventually fix itself.
+
 [1]: https://github.com/hirmeos/identifier_translation_service "Identifier Translation Service"
