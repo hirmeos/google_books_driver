@@ -94,13 +94,15 @@ def print_gb_csv(gb_account, user, password, user_agent, start_date, end_date):
 
     try:
         results = get_report(report_url, cookie_str)
-        service.close()
         report = results.decode('utf-16')
     except (UnicodeDecodeError, ValueError):
         msg = ('Failed to retrieve report %s-%s.' +
                'This is likely to be caused by an authentication issue\n')
         sys.stderr.write(msg % (start_date, end_date))
         sys.exit(1)
+    finally:
+        service.close()
+
     try:
         assert report.strip() != REPORT_HEADERS and report.strip()
         print(report)
