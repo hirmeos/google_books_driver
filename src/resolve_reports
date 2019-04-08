@@ -105,7 +105,8 @@ def resolve(date):
         uri = standarise_uri(isbn)
         for identifier in isbn_to_id(uri, timestamp):
             uri = identifier['URI']
-            yield (timestamp, uri, views)
+            # GB adds commas to separate thousands - remove it
+            yield (timestamp, uri, views.replace(',', ''))
 
 
 def run(measure, date, add_headers):
