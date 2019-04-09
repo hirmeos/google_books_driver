@@ -118,7 +118,7 @@ def run(measure, date, add_headers):
         hits[key] += int(views)
 
     w = csv.writer(sys.stdout)
-    if add_headers:
+    if add_headers and hits:
         w.writerow(('measure_id', 'timestamp', 'work_uri',
                     'country_uri', 'event_uri', 'value'))
     for key, value in hits.items():
