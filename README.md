@@ -36,6 +36,23 @@ The following environment variables must be set. You can find a template in `./c
 | `URI_STRICT`    | Whether to output errors with ambiguous translation queries.                     |
 | `CUTOFF_DAYS`   | The driver will get reports until today minus `CUTOFF_DAYS`.                     |
 
+### Example `config.env` file
+```
+MODES=[{"measure":"https://metrics.operas-eu.org/google-books/views/v1","name":"google-books","startDate":"2010-01-01","config": [{"name":"account","value":"0123456789012345678"}]}]
+USER_AGENT="Mozilla/5.0 (Windows NT 6.1; WOW64; rv:25.0) Gecko/20100101 Firefox/25.0"
+WORK_TYPES=["book","book-series","book-set","dissertation","edited-book","journal","journal-issue","journal-volume","monograph","posted-content","proceedings","reference-book","report","report-series","standard","standard-series"]
+GOOGLE_USER=agoogleaccount@gmail.com
+GOOGLE_PASS=a_secret_google_password
+OUTDIR=/usr/src/app/output
+CACHEDIR=/usr/src/app/cache
+URI_API_ENDP=https://identifier.translation.service/translate
+AUTH_API_ENDP=https://authentication.service/tokens
+URI_API_USER=admin_user@openbookpublishers.com
+URI_API_PASS=some_secret_password
+URI_SCHEME=info:doi
+URI_STRICT=false
+CUTOFF_DAYS=1
+```
 
 ### The `MODES` env variable
 You must define a JSON array in`MODES`, with at least one record. The driver will iterate through the array, performing its task once per mode; in a typical case there will only be one entry in the array, however this configuration allows one single driver to query reports from multiple google books accounts.
