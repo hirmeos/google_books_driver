@@ -13,6 +13,10 @@ GOOGLE_PASS = os.environ['GOOGLE_PASS']
 OUTDIR = os.environ['OUTDIR']
 CACHEDIR = os.environ['CACHEDIR']
 CUTOFF_DAYS = int(os.environ['CUTOFF_DAYS'])
+try:
+    REDO_OUTPUT = os.environ['REDO_OUTPUT'] in (True, 'True', 'true', 1)
+except KeyError:
+    REDO_OUTPUT = False
 
 
 def outstream(filename):
@@ -124,7 +128,7 @@ def run():
         out_file = get_output_filename(OUTDIR, date)
 
         # continue if output file already exists
-        if exists_and_not_empty(out_file):
+        if exists_and_not_empty(out_file) and not REDO_OUTPUT:
             continue
 
         i = 0
