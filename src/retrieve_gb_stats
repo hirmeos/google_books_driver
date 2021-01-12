@@ -78,7 +78,7 @@ def get_report(report_url, user_agent, cookies):
        or not res.headers['content-type'] == CONTENT_TYPE:
         # These are not the reports we're looking for
         raise ValueError(res.text)
-    return res.text
+    return res.content
 
 
 def print_gb_csv(gb_account, user, password, user_agent, start_date, end_date):
