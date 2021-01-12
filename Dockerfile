@@ -1,4 +1,4 @@
-FROM python:3.5
+FROM python:3.7
 
 RUN apt-get update && apt-get upgrade -y && \
     pip install --upgrade pip
