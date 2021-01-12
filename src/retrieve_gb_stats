@@ -4,7 +4,7 @@
 import sys
 import time
 import datetime
-import httplib2
+import requests
 from selenium import webdriver
 from optparse import OptionParser
 
@@ -62,13 +62,6 @@ def initialize_service(user, password, user_agent):
     return driver
 
 
-def build_cookie_str(session_cookies):
-    cookie_str = ""
-    for c in session_cookies:
-        cookie_str += "%s=%s; " % (c['name'], c['value'])
-    return cookie_str[:-1]  # last character is a space
-
-
 def build_report_url(gb_account, start_date, end_date):
     fmt = '%Y,%-m,%-d'
     start = datetime.datetime.strptime(start_date, '%Y-%m-%d').strftime(fmt)
@@ -78,22 +71,23 @@ def build_report_url(gb_account, start_date, end_date):
     return url % (gb_account, start, end)
 
 
-def get_report(report_url, cookie_str):
-    h = httplib2.Http()
-    res, content = h.request(report_url, 'GET', headers={'Cookie': cookie_str})
-    if not res.status == 200 or not res['content-type'] == CONTENT_TYPE:
+def get_report(report_url, user_agent, cookies):
+    headers = {'user-agent': user_agent}
+    res = requests.get(report_url, headers=headers, cookies=cookies)
+    if not res.status_code == 200 \
+       or not res.headers['content-type'] == CONTENT_TYPE:
         # These are not the reports we're looking for
-        raise ValueError(content)
-    return content
+        raise ValueError(res.text)
+    return res.text
 
 
 def print_gb_csv(gb_account, user, password, user_agent, start_date, end_date):
     service = initialize_service(user, password, user_agent)
-    cookie_str = build_cookie_str(service.get_cookies())
+    cookies = service.get_cookies()
     report_url = build_report_url(gb_account, start_date, end_date)
 
     try:
-        results = get_report(report_url, cookie_str)
+        results = get_report(report_url, user_agent, cookies)
         report = results.decode('utf-16')
     except (UnicodeDecodeError, ValueError):
         msg = ('Failed to retrieve report %s-%s.' +
