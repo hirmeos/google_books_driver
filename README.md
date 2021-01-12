@@ -19,22 +19,24 @@ We recommend creating a Google account specifically for this purpose, instead of
 ### Environment variables
 The following environment variables must be set. You can find a template in `./config/config.env.example`.
 
-| Variable        | Description                                                                      |
-| --------------- | -------------------------------------------------------------------------------- |
-| `MODES`         | A JSON array containing further configuration (see below).                       |
-| `WORK_TYPES`    | All the pertinent work types to query in the translation service.                |
-| `USER_AGENT`    | The user agent to use with phantomjs.                                            |
-| `GOOGLE_USER`   | The email address of a google account with access to the reports.                |
-| `GOOGLE_PASS`   | The password for the above google account.                                       |
-| `OUTDIR`        | The path to the directory where the driver will store its output.                |
-| `CACHEDIR`      | The path to the directory where the driver will store the raw reports.           |
-| `URI_API_ENDP`  | The URL to the translation service.                                              |
-| `AUTH_API_ENDP` | The URL to the tokens API.                                                       |
-| `URI_API_USER`  | The email address of the user with access to the translation service.            |
-| `URI_API_PASS`  | The password of the above user.                                                  |
-| `URI_SCHEME`    | The desired URI scheme to normalise identifiers to (we recommend DOI, info:doi). |
-| `URI_STRICT`    | Whether to output errors with ambiguous translation queries.                     |
-| `CUTOFF_DAYS`   | The driver will get reports until today minus `CUTOFF_DAYS`.                     |
+| Variable        | Description                                                                                      |
+| --------------- | ------------------------------------------------------------------------------------------------ |
+| `MODES`         | A JSON array containing further configuration (see below).                                       |
+| `WORK_TYPES`    | All the pertinent work types to query in the translation service.                                |
+| `USER_AGENT`    | The user agent to use with phantomjs.                                                            |
+| `GOOGLE_USER`   | The email address of a google account with access to the reports.                                |
+| `GOOGLE_PASS`   | The password for the above google account.                                                       |
+| `OUTDIR`        | The path to the directory where the driver will store its output.                                |
+| `CACHEDIR`      | The path to the directory where the driver will store the raw reports.                           |
+| `URI_API_ENDP`  | The URL to the translation service.                                                              |
+| `AUTH_API_ENDP` | The URL to the tokens API.                                                                       |
+| `URI_API_USER`  | The email address of the user with access to the translation service.                            |
+| `URI_API_PASS`  | The password of the above user.                                                                  |
+| `URI_SCHEME`    | The desired URI scheme to normalise identifiers to (we recommend DOI, info:doi).                 |
+| `URI_STRICT`    | Whether to output errors with ambiguous translation queries.                                     |
+| `CUTOFF_DAYS`   | The driver will get reports until today minus `CUTOFF_DAYS`.                                     |
+| `REDO_OUTPUT`   | Reprocess output regardless of whether it already exists. Useful if new entries have been added. |
+
 
 ### Example `config.env` file
 ```
